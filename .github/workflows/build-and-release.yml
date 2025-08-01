@@ -1,0 +1,46 @@
+name: Build and Release
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.9'
+    
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r client_requirements.txt
+        pip install pyinstaller
+    
+    - name: Build Client
+      run: |
+        pyinstaller --onefile --noconsole --hidden-import=PIL._tkinter_finder --name=wallpaper_client client.py
+    
+    - name: Build Controller
+      run: |
+        pyinstaller --onefile --windowed --name=wallpaper_controller controller.py
+    
+    - name: Upload Client to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} dist/wallpaper_client.exe
+    
+    - name: Upload Controller to Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        gh release upload ${{ github.event.release.tag_name }} dist/wallpaper_controller.exe
+
+permissions:
+  contents: write
