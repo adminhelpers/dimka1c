@@ -1,10 +1,4 @@
 {
-  "wallpaper_jeka.jpg": {
-    "name": "Женя Клочанов",
-    "created_at": "05 августа 2025",
-    "created_by": "pnevgodovskiy",
-    "created_by_ip": "127.0.0.1"
-  },
   "wallpaper_pasha.jpg": {
     "name": "Павел Невгодовский",
     "created_at": "05 августа 2025",
@@ -41,7 +35,7 @@
     "created_by": "system/root",
     "created_by_ip": "127.0.0.1"
   },
- "wallpaper_sofya.jpg": {
+  "wallpaper_sofya.jpg": {
     "name": "София Пирогова",
     "created_at": "05 августа 2025",
     "created_by": "system/root",
