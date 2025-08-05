@@ -1,0 +1,8 @@
+names = {
+  "test.jpg": {
+    "name": "Тестовый персонаж",
+    "created_at": "5 август 2025"
+    "created_by": "pnevgodovskiy"
+    "created_by_ip": 127.0.0.1
+  }
+}
