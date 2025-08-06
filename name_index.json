@@ -28,23 +28,5 @@
     "created_at": "05 августа 2025",
     "created_by": "system/root",
     "created_by_ip": "127.0.0.1"
-  },
-  "wallpaper_nadya.jpg": {
-    "name": "Надежда Пуйдо",
-    "created_at": "05 августа 2025",
-    "created_by": "system/root",
-    "created_by_ip": "127.0.0.1"
-  },
-  "wallpaper_sofya.jpg": {
-    "name": "София Пирогова",
-    "created_at": "05 августа 2025",
-    "created_by": "system/root",
-    "created_by_ip": "127.0.0.1"
-  },
-  "wallpaper_olga.jpg": {
-    "name": "Ольга",
-    "created_at": "05 августа 2025",
-    "created_by": "system/root",
-    "created_by_ip": "127.0.0.1"
   }
 }
